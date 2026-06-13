@@ -26,15 +26,19 @@ jobs:
   ruby-lint:
     name: Ruby lint (standard)
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [shared, click_processor, query_service]
     steps:
       - uses: actions/checkout@v4
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"
           bundler-cache: true
-          working-directory: services/shared
-      - run: bundle exec standardrb
-        working-directory: services/shared
+          working-directory: services/${{ matrix.service }}
+      # Lint only our source (lib/spec); vendored gems are excluded by .standard.yml too.
+      - run: bundle exec standardrb lib spec
+        working-directory: services/${{ matrix.service }}
 
   spark:
     name: PySpark reconciliation tests
