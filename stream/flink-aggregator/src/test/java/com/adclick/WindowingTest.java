@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -63,17 +65,30 @@ class WindowingTest {
           + "FROM TABLE(TUMBLE(TABLE clicks_in, DESCRIPTOR(click_time), INTERVAL '1' MINUTE)) "
           + "GROUP BY campaign_id, window_start, window_end");
 
+        // Key by (campaign, window-start epoch millis) so the assertion does not
+        // depend on whether window_start collects as Instant or LocalDateTime.
         Map<String, Long> got = new HashMap<>();
         try (CloseableIterator<Row> it = windowed.execute().collect()) {
             while (it.hasNext()) {
                 Row r = it.next();
-                String key = r.getField("campaign_id") + "@" + r.getField("window_start");
+                String key = r.getField("campaign_id") + "@" + epochMillis(r.getField("window_start"));
                 got.put(key, ((Number) r.getField("c")).longValue());
             }
         }
 
-        assertEquals(3L, got.get("camp_1@" + Instant.parse("2026-06-13T14:07:00Z")));
-        assertEquals(1L, got.get("camp_1@" + Instant.parse("2026-06-13T14:08:00Z")));
-        assertEquals(1L, got.get("camp_2@" + Instant.parse("2026-06-13T14:07:00Z")));
+        assertEquals(3L, got.get("camp_1@" + ms("2026-06-13T14:07:00Z")));
+        assertEquals(1L, got.get("camp_1@" + ms("2026-06-13T14:08:00Z")));
+        assertEquals(1L, got.get("camp_2@" + ms("2026-06-13T14:07:00Z")));
+    }
+
+    /** Normalize a window-start field (Instant or UTC LocalDateTime) to epoch millis. */
+    private static long epochMillis(Object windowStart) {
+        if (windowStart instanceof Instant) {
+            return ((Instant) windowStart).toEpochMilli();
+        }
+        if (windowStart instanceof LocalDateTime) {
+            return ((LocalDateTime) windowStart).toInstant(ZoneOffset.UTC).toEpochMilli();
+        }
+        throw new IllegalStateException("unexpected window_start type: " + windowStart.getClass());
     }
 }
