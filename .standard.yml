@@ -1,0 +1,3 @@
+# Standard (Ruby linter/formatter) configuration.
+ruby_version: 3.2
+default_ignores: true

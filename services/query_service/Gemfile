@@ -1,0 +1,13 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+gem "shared", path: "../shared"
+
+# Redshift is wire-compatible with PostgreSQL; we read aggregates over the pg driver.
+gem "pg", "~> 1.5"
+
+group :development, :test do
+  gem "rspec", "~> 3.13"
+  gem "standard", "~> 1.40"
+end

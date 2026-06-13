@@ -1,0 +1,68 @@
+openapi: 3.1.0
+info:
+  title: Ad Click Aggregator — Click API
+  version: 1.0.0
+  description: >
+    Click ingestion + redirect endpoint (User Story 1). Backed by API Gateway HTTP API
+    integrated with the Ruby click-processor Lambda. The click is logged (dedup + Kinesis
+    put) BEFORE the 302 redirect is returned (server-side redirect, research D1).
+paths:
+  /click:
+    get:
+      summary: Record a click for an ad impression and redirect to the advertiser
+      operationId: recordClick
+      parameters:
+        - name: ad_id
+          in: query
+          required: true
+          schema: { type: string }
+          description: The clicked ad. Must exist and be active in the ads catalog.
+        - name: impression_id
+          in: query
+          required: true
+          schema: { type: string }
+          description: >
+            Unique id assigned when the ad was shown. Dedup key — at most one click is
+            counted per impression_id (FR-004).
+        - name: click_ts
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+          description: >
+            Optional client-supplied event time (ISO8601 UTC). Defaults to server receive
+            time. Used to derive minute_bucket and to attribute delayed clicks (FR-016).
+      responses:
+        '302':
+          description: >
+            Click accepted (and counted if first time for this impression). Redirects to the
+            ad's destination_url. Returned only after the click is durably enqueued to
+            Kinesis (FR-001/FR-002).
+          headers:
+            Location:
+              schema: { type: string, format: uri }
+              description: The ad's destination_url.
+        '400':
+          description: Missing or malformed ad_id / impression_id (edge case — clean reject).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '404':
+          description: ad_id not found or inactive — no click recorded, no redirect (FR-005).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '502':
+          description: >
+            Downstream enqueue (Kinesis) failed. Click NOT silently dropped — caller/edge
+            should retry (FR-002, Constitution Principle IV).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+components:
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+        detail: { type: string }

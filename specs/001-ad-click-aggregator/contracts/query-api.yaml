@@ -1,0 +1,98 @@
+openapi: 3.1.0
+info:
+  title: Ad Click Aggregator — Query API
+  version: 1.0.0
+  description: >
+    Advertiser metrics endpoint (User Story 2). API Gateway HTTP API → Ruby query-service
+    Lambda → Redshift click_aggregates. Results are scoped to campaigns owned by the
+    authenticated advertiser (FR-009).
+paths:
+  /metrics:
+    get:
+      summary: Get click counts for a campaign over a time range at a chosen granularity
+      operationId: getMetrics
+      security:
+        - advertiserAuth: []
+      parameters:
+        - name: campaign_id
+          in: query
+          required: true
+          schema: { type: string }
+          description: Campaign to report on. Must be owned by the caller (FR-009).
+        - name: from
+          in: query
+          required: true
+          schema: { type: string, format: date-time }
+          description: Inclusive window start (ISO8601 UTC).
+        - name: to
+          in: query
+          required: true
+          schema: { type: string, format: date-time }
+          description: Exclusive window end (ISO8601 UTC).
+        - name: granularity
+          in: query
+          required: false
+          schema: { type: string, enum: [minute, hour, day], default: minute }
+          description: Bucket size (FR-008). Coarser buckets computed via date_trunc.
+      responses:
+        '200':
+          description: >
+            Time-bucketed counts. Buckets with no clicks are returned as zero, not omitted
+            and not an error (FR-010 / SC-007). Reflects clicks within the freshness target
+            (SC-003).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MetricsResponse' }
+        '400':
+          description: Invalid range (to <= from), unknown granularity, or oversized range.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '403':
+          description: Caller does not own campaign_id (FR-009).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+components:
+  securitySchemes:
+    advertiserAuth:
+      type: http
+      scheme: bearer
+      description: >
+        Bearer token identifying the advertiser principal (identity provider assumed per
+        spec). advertiser_id is derived from this principal, never from the query string.
+  schemas:
+    MetricsResponse:
+      type: object
+      required: [campaign_id, granularity, buckets]
+      properties:
+        campaign_id: { type: string }
+        granularity: { type: string, enum: [minute, hour, day] }
+        from: { type: string, format: date-time }
+        to: { type: string, format: date-time }
+        buckets:
+          type: array
+          items: { $ref: '#/components/schemas/Bucket' }
+    Bucket:
+      type: object
+      required: [bucket_start, click_count]
+      properties:
+        bucket_start:
+          type: string
+          format: date-time
+          description: UTC start of the bucket.
+        click_count:
+          type: integer
+          minimum: 0
+        source:
+          type: string
+          enum: [stream, batch]
+          description: >
+            Whether this bucket's value is the near-real-time approximation (stream) or the
+            reconciled exact value (batch). Informational (FR-014).
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+        detail: { type: string }

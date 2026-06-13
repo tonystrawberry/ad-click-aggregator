@@ -1,0 +1,15 @@
+{
+  "advertisers": [
+    { "advertiser_id": "adv_demo", "name": "Demo Advertiser" }
+  ],
+  "campaigns": [
+    { "campaign_id": "camp_demo", "advertiser_id": "adv_demo", "name": "Summer Sale" },
+    { "campaign_id": "camp_viral", "advertiser_id": "adv_demo", "name": "Viral Push" }
+  ],
+  "ads": [
+    { "ad_id": "ad_demo_1", "campaign_id": "camp_demo", "advertiser_id": "adv_demo", "destination_url": "https://example.com/summer", "active": true },
+    { "ad_id": "ad_demo_2", "campaign_id": "camp_demo", "advertiser_id": "adv_demo", "destination_url": "https://example.com/summer-2", "active": true },
+    { "ad_id": "ad_viral_1", "campaign_id": "camp_viral", "advertiser_id": "adv_demo", "destination_url": "https://example.com/viral", "active": true },
+    { "ad_id": "ad_inactive", "campaign_id": "camp_demo", "advertiser_id": "adv_demo", "destination_url": "https://example.com/off", "active": false }
+  ]
+}
