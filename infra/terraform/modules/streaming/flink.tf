@@ -39,8 +39,20 @@ data "aws_iam_policy_document" "flink" {
     resources = ["arn:aws:s3:::${var.artifacts_bucket}/*"]
   }
   statement {
-    sid       = "VpcEni"
-    actions   = ["ec2:CreateNetworkInterface", "ec2:DescribeNetworkInterfaces", "ec2:DeleteNetworkInterface", "ec2:DescribeVpcs", "ec2:DescribeSubnets", "ec2:DescribeSecurityGroups"]
+    sid = "VpcEni"
+    # Full set Managed Flink validates for VPC connectivity. CreateNetworkInterfacePermission
+    # and DescribeDhcpOptions are the ones whose absence triggers the "does not have the
+    # necessary privileges to configure VPC connectivity" error at CreateApplication.
+    actions = [
+      "ec2:CreateNetworkInterface",
+      "ec2:CreateNetworkInterfacePermission",
+      "ec2:DescribeNetworkInterfaces",
+      "ec2:DeleteNetworkInterface",
+      "ec2:DescribeVpcs",
+      "ec2:DescribeSubnets",
+      "ec2:DescribeSecurityGroups",
+      "ec2:DescribeDhcpOptions",
+    ]
     resources = ["*"]
   }
   statement {
