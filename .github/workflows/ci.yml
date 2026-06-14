@@ -64,7 +64,7 @@ jobs:
         with:
           distribution: temurin
           java-version: "11" # PyFlink bundles Flink but needs a JVM at runtime
-      - run: pip install -r stream/flink-aggregator/requirements.txt
+      - run: pip install -r stream/flink-aggregator/requirements.txt pytest
       - run: python -m pytest -q
         working-directory: stream/flink-aggregator
 
