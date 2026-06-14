@@ -1,0 +1,9 @@
+.git/
+*.md
+specs/
+services/
+stream/
+batch/
+seeds/
+docs/
+*.zip

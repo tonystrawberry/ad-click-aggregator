@@ -1,0 +1,7 @@
+# Copy to dev.tfvars and adjust. dev.tfvars is gitignored.
+region                  = "us-east-1"
+environment             = "dev"
+name_prefix             = "ad-click"
+kinesis_salt_factor     = 8
+impression_ttl_seconds  = 172800
+reconciliation_schedule = "rate(1 hour)"

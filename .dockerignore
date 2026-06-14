@@ -1,0 +1,12 @@
+.git/
+.terraform/
+*.tfstate*
+node_modules/
+target/
+build/
+dist/
+coverage/
+*.log
+.env*
+specs/
+docs/

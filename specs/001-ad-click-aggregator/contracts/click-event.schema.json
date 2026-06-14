@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ad-click-aggregator/contracts/click-event.schema.json",
+  "title": "ClickEvent",
+  "description": "Canonical click event placed on Kinesis by the click processor and archived to S3 (Parquet) by Firehose. The raw unit of truth for reconciliation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "impression_id",
+    "ad_id",
+    "campaign_id",
+    "advertiser_id",
+    "click_ts",
+    "minute_bucket",
+    "ingest_ts"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "description": "UUID for this event (trace/debug)."
+    },
+    "impression_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Dedup key. Reconciliation de-duplicates raw records on this field."
+    },
+    "ad_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "FK to DynamoDB ads catalog."
+    },
+    "campaign_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Denormalized at capture so Flink/Spark aggregate without a join."
+    },
+    "advertiser_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Denormalized owner id."
+    },
+    "click_ts": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Event time (ISO8601 UTC). Basis for minute_bucket and watermarking."
+    },
+    "minute_bucket": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:00Z$",
+      "description": "UTC minute floor of click_ts (YYYY-MM-DDTHH:MM:00Z)."
+    },
+    "user_agent": {
+      "type": "string",
+      "description": "Optional; reserved for future fraud analysis, not used in counts."
+    },
+    "ingest_ts": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Time the processor accepted the click (ISO8601 UTC)."
+    }
+  }
+}

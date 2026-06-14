@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  ruby:
+    name: Ruby unit tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [shared, click_processor, query_service]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+          working-directory: services/${{ matrix.service }}
+      - name: RSpec (excluding integration)
+        working-directory: services/${{ matrix.service }}
+        run: bundle exec rspec --tag ~integration
+
+  ruby-lint:
+    name: Ruby lint (standard)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [shared, click_processor, query_service]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+          working-directory: services/${{ matrix.service }}
+      # Lint only our source (lib/spec); vendored gems are excluded by .standard.yml too.
+      - run: bundle exec standardrb lib spec
+        working-directory: services/${{ matrix.service }}
+
+  spark:
+    name: PySpark reconciliation tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - run: pip install -r batch/reconciliation/requirements-dev.txt
+      - run: python -m pytest -q
+        working-directory: batch/reconciliation
+
+  flink:
+    name: PyFlink build + tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11" # apache-flink supports 3.8–3.11
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "11" # PyFlink bundles Flink but needs a JVM at runtime
+      - run: pip install -r stream/flink-aggregator/requirements.txt pytest
+      - run: python -m pytest -q
+        working-directory: stream/flink-aggregator
+
+  terraform:
+    name: Terraform fmt + validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - name: fmt
+        run: terraform -chdir=infra/terraform/envs/dev fmt -check -recursive ../..
+      - name: init (no backend)
+        run: terraform -chdir=infra/terraform/envs/dev init -backend=false
+      - name: validate
+        run: terraform -chdir=infra/terraform/envs/dev validate

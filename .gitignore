@@ -1,0 +1,48 @@
+# --- Ruby ---
+.bundle/
+vendor/bundle/
+log/
+tmp/
+*.gem
+.rspec_status
+coverage/
+
+# --- Terraform ---
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+.terraform.lock.hcl
+crash.log
+crash.*.log
+
+# --- Flink (PyFlink app) ---
+stream/flink-aggregator/lib/   # connector + redshift jars fetched by build_flink.sh
+*.jar
+
+# --- Python / Spark ---
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# --- Build artifacts ---
+dist/
+*.zip
+
+# --- Secrets / local env ---
+.env
+.env.*
+*.pem
+*.key
+
+# --- Universal ---
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.vscode/
+.idea/

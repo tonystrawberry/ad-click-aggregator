@@ -1,0 +1,7 @@
+# Standard (Ruby linter/formatter) configuration.
+ruby_version: 3.2
+default_ignores: true
+ignore:
+  - "**/vendor/**/*"   # bundler-cache vendors gems here in CI; never lint them
+  - "**/dist/**/*"
+  - "**/.bundle/**/*"
