@@ -24,7 +24,7 @@ end
 
 def main
   client = Aws::RedshiftDataAPIService::Client.new
-  sql = File.read(DDL_PATH)
+  sql = File.read(DDL_PATH, encoding: "UTF-8") # DDL comments contain non-ASCII (em-dashes)
   statements = create_statements(sql)
   abort "No CREATE TABLE statements found in #{DDL_PATH}" if statements.empty?
 
