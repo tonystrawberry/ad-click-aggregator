@@ -123,6 +123,7 @@ resource "aws_kinesisanalyticsv2_application" "aggregator" {
       parallelism_configuration {
         configuration_type   = "CUSTOM"
         parallelism          = 2
+        parallelism_per_kpu  = 1
         auto_scaling_enabled = true
       }
     }
