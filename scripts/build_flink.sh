@@ -12,8 +12,8 @@ ARTIFACTS_BUCKET="${ARTIFACTS_BUCKET:?set ARTIFACTS_BUCKET}"
 FLINK_VERSION="1.20"
 
 # Connector + Redshift JDBC jars the job needs at runtime.
-KINESIS_JAR="flink-sql-connector-kinesis-4.3.0-1.20.jar"
-KINESIS_URL="https://repo1.maven.org/maven2/org/apache/flink/flink-sql-connector-kinesis/4.3.0-1.20/${KINESIS_JAR}"
+KINESIS_JAR="flink-sql-connector-kinesis-5.1.0-1.20.jar"
+KINESIS_URL="https://repo1.maven.org/maven2/org/apache/flink/flink-sql-connector-kinesis/5.1.0-1.20/${KINESIS_JAR}"
 REDSHIFT_JAR="redshift-jdbc42-2.1.0.30.jar"
 REDSHIFT_URL="https://repo1.maven.org/maven2/com/amazon/redshift/redshift-jdbc42/2.1.0.30/${REDSHIFT_JAR}"
 

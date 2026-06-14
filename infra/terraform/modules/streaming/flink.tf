@@ -94,7 +94,7 @@ resource "aws_kinesisanalyticsv2_application" "aggregator" {
         property_group_id = "kinesis.analytics.flink.run.options"
         property_map = {
           "python"  = "main.py"
-          "jarfile" = "lib/flink-sql-connector-kinesis-4.3.0-1.20.jar"
+          "jarfile" = "lib/flink-sql-connector-kinesis-5.1.0-1.20.jar"
         }
       }
       property_group {
