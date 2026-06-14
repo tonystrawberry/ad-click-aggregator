@@ -79,9 +79,9 @@ def source_ddl(cfg):
           WATERMARK FOR click_time AS click_time - INTERVAL '30' SECOND
         ) WITH (
           'connector' = 'kinesis',
-          'stream' = '{cfg.get("stream.name")}',
+          'stream.arn' = '{cfg.get("stream.arn")}',
           'aws.region' = '{cfg.get("aws.region", "us-east-1")}',
-          'scan.stream.initpos' = '{cfg.get("scan.initpos", "LATEST")}',
+          'source.init.position' = '{cfg.get("source.init.position", "LATEST")}',
           'format' = 'json',
           'json.ignore-parse-errors' = 'true'
         )
@@ -89,10 +89,18 @@ def source_ddl(cfg):
 
 
 def add_dependency_jars(env, cfg):
-    """Connector + Redshift driver jars bundled under the app's lib/ dir."""
+    """Add the JDBC jars as pipeline jars: Flink's JDBC connector (JdbcSink /
+    JdbcConnectionOptions, referenced from Python at planning via py4j) and the
+    Redshift JDBC driver (used by the sink at runtime). The Kinesis connector is
+    NOT added here — it is supplied via the Managed Flink `jarfile` run-option so
+    it lands on the submission classpath for Table API factory discovery."""
     jar_dir = cfg.get("connector.jar.dir") or os.path.join(os.path.dirname(__file__), "lib")
     if os.path.isdir(jar_dir):
-        jars = [f"file://{os.path.join(jar_dir, j)}" for j in os.listdir(jar_dir) if j.endswith(".jar")]
+        jars = [
+            f"file://{os.path.join(jar_dir, j)}"
+            for j in os.listdir(jar_dir)
+            if j.endswith(".jar") and "jdbc" in j  # flink-connector-jdbc + redshift-jdbc42
+        ]
         if jars:
             env.add_jars(*jars)
 
@@ -111,16 +119,20 @@ def main():
     windowed = t_env.sql_query(
         """
         SELECT campaign_id,
-               window_start AS minute_bucket,
-               COUNT(*)     AS click_count
+               DATE_FORMAT(window_start, 'yyyy-MM-dd HH:mm:ss') AS minute_bucket,
+               COUNT(*)                                         AS click_count
         FROM TABLE(TUMBLE(TABLE click_events, DESCRIPTOR(click_time), INTERVAL '1' MINUTE))
         GROUP BY campaign_id, window_start, window_end
         """
     )
 
+    # minute_bucket is emitted as a STRING: the Flink TIMESTAMP window column
+    # materializes as java.time.LocalDateTime, which the JDBC statement builder
+    # cannot cast to java.sql.Timestamp. We hand Redshift a string and let the
+    # MERGE's `CAST(? AS TIMESTAMP)` parse it.
     row_type = Types.ROW_NAMED(
         ["campaign_id", "minute_bucket", "click_count"],
-        [Types.STRING(), Types.SQL_TIMESTAMP(), Types.LONG()],
+        [Types.STRING(), Types.STRING(), Types.LONG()],
     )
     ds = t_env.to_data_stream(windowed)
 

@@ -79,10 +79,24 @@ resource "aws_security_group" "flink" {
   }
 }
 
+resource "aws_cloudwatch_log_group" "flink" {
+  name              = "/aws/kinesis-analytics/${var.name_prefix}-flink-aggregator"
+  retention_in_days = 7
+}
+
+resource "aws_cloudwatch_log_stream" "flink" {
+  name           = "flink-logs"
+  log_group_name = aws_cloudwatch_log_group.flink.name
+}
+
 resource "aws_kinesisanalyticsv2_application" "aggregator" {
   name                   = "${var.name_prefix}-flink-aggregator"
   runtime_environment    = "FLINK-1_20"
   service_execution_role = aws_iam_role.flink.arn
+
+  cloudwatch_logging_options {
+    log_stream_arn = aws_cloudwatch_log_stream.flink.arn
+  }
 
   application_configuration {
     application_code_configuration {
@@ -114,13 +128,13 @@ resource "aws_kinesisanalyticsv2_application" "aggregator" {
         # NOTE (educational): Redshift password is passed via app properties for
         # simplicity. A hardened build would read the secret at runtime in-app.
         property_map = {
-          "stream.name"       = var.kinesis_stream_name
-          "aws.region"        = data.aws_region.current.name
-          "scan.initpos"      = "LATEST"
-          "redshift.jdbc.url" = local.redshift_jdbc
-          "redshift.user"     = local.redshift_creds.username
-          "redshift.password" = local.redshift_creds.password
-          "sink.batch.size"   = "100"
+          "stream.arn"           = var.kinesis_stream_arn
+          "aws.region"           = data.aws_region.current.name
+          "source.init.position" = "LATEST"
+          "redshift.jdbc.url"    = local.redshift_jdbc
+          "redshift.user"        = local.redshift_creds.username
+          "redshift.password"    = local.redshift_creds.password
+          "sink.batch.size"      = "100"
         }
       }
     }

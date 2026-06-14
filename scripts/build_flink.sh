@@ -16,11 +16,18 @@ KINESIS_JAR="flink-sql-connector-kinesis-5.1.0-1.20.jar"
 KINESIS_URL="https://repo1.maven.org/maven2/org/apache/flink/flink-sql-connector-kinesis/5.1.0-1.20/${KINESIS_JAR}"
 REDSHIFT_JAR="redshift-jdbc42-2.1.0.30.jar"
 REDSHIFT_URL="https://repo1.maven.org/maven2/com/amazon/redshift/redshift-jdbc42/2.1.0.30/${REDSHIFT_JAR}"
+# Flink's JDBC connector (provides JdbcSink / JdbcConnectionOptions used by main.py).
+# Must be 3.1.x: PyFlink 1.20's jdbc.py wrapper reflectively calls
+# JdbcOutputFormat.createRowJdbcStatementBuilder(int[]), which exists only in 3.1.x
+# (removed in 3.2.0+). Verified with javap across versions.
+FLINK_JDBC_JAR="flink-connector-jdbc-3.1.2-1.18.jar"
+FLINK_JDBC_URL="https://repo1.maven.org/maven2/org/apache/flink/flink-connector-jdbc/3.1.2-1.18/${FLINK_JDBC_JAR}"
 
 echo "[build-flink] fetching connector jars into lib/"
 mkdir -p "$LIB"
-[ -f "$LIB/$KINESIS_JAR" ]  || curl -fsSL "$KINESIS_URL"  -o "$LIB/$KINESIS_JAR"
-[ -f "$LIB/$REDSHIFT_JAR" ] || curl -fsSL "$REDSHIFT_URL" -o "$LIB/$REDSHIFT_JAR"
+[ -f "$LIB/$KINESIS_JAR" ]    || curl -fsSL "$KINESIS_URL"    -o "$LIB/$KINESIS_JAR"
+[ -f "$LIB/$REDSHIFT_JAR" ]   || curl -fsSL "$REDSHIFT_URL"   -o "$LIB/$REDSHIFT_JAR"
+[ -f "$LIB/$FLINK_JDBC_JAR" ] || curl -fsSL "$FLINK_JDBC_URL" -o "$LIB/$FLINK_JDBC_JAR"
 
 echo "[build-flink] zipping app"
 mkdir -p "$DIST"
