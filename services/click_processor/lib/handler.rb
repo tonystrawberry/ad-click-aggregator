@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "bundler/setup" # load the vendored gems packaged alongside this handler
 require "json"
 require "redis"
 require "shared"

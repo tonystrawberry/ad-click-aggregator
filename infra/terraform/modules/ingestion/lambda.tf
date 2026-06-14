@@ -42,6 +42,7 @@ resource "aws_lambda_function" "click_processor" {
   function_name    = "${var.name_prefix}-click-processor"
   role             = aws_iam_role.click_processor.arn
   runtime          = "ruby3.3"
+  architectures    = ["arm64"]
   handler          = "handler.ClickProcessor.lambda_handler"
   filename         = var.lambda_zip_path
   source_code_hash = filebase64sha256(var.lambda_zip_path)
@@ -61,6 +62,10 @@ resource "aws_lambda_function" "click_processor" {
       REDIS_PORT             = tostring(var.redis_port)
       KINESIS_SALT_FACTOR    = tostring(var.kinesis_salt_factor)
       IMPRESSION_TTL_SECONDS = tostring(var.impression_ttl_seconds)
+      # Make `require "bundler/setup"` find the vendored gems packaged in the zip.
+      BUNDLE_GEMFILE = "/var/task/Gemfile"
+      BUNDLE_PATH    = "/var/task/vendor/bundle"
+      BUNDLE_WITHOUT = "development:test"
     }
   }
 }

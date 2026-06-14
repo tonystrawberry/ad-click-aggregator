@@ -50,6 +50,7 @@ resource "aws_lambda_function" "query" {
   function_name    = "${var.name_prefix}-query-service"
   role             = aws_iam_role.query.arn
   runtime          = "ruby3.3"
+  architectures    = ["arm64"]
   handler          = "handler.QueryService.lambda_handler"
   filename         = var.lambda_zip_path
   source_code_hash = filebase64sha256(var.lambda_zip_path)
@@ -70,6 +71,10 @@ resource "aws_lambda_function" "query" {
       REDSHIFT_DB       = local.redshift_creds.dbname
       REDSHIFT_USER     = local.redshift_creds.username
       REDSHIFT_PASSWORD = local.redshift_creds.password
+      # Make `require "bundler/setup"` find the vendored gems packaged in the zip.
+      BUNDLE_GEMFILE = "/var/task/Gemfile"
+      BUNDLE_PATH    = "/var/task/vendor/bundle"
+      BUNDLE_WITHOUT = "development:test"
     }
   }
 }
