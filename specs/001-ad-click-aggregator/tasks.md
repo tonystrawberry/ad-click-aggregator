@@ -19,7 +19,7 @@ independently demonstrable increment.
 ## Path Conventions
 
 Per plan.md structure: `infra/terraform/` (IaC modules + `envs/dev`), `services/` (Ruby
-Lambdas + `shared/` gem), `stream/flink-aggregator/` (Java Flink), `batch/reconciliation/`
+Lambdas + `shared/` gem), `stream/flink-aggregator/` (PyFlink), `batch/reconciliation/`
 (PySpark Glue), `seeds/`, `docs/`.
 
 ---
@@ -31,7 +31,7 @@ Lambdas + `shared/` gem), `stream/flink-aggregator/` (Java Flink), `batch/reconc
 - [X] T001 Create the repository directory skeleton per plan.md (`infra/terraform/modules/{ingestion,streaming,storage,query,reconciliation}`, `infra/terraform/envs/dev`, `services/{click_processor,query_service,shared}`, `stream/flink-aggregator`, `batch/reconciliation`, `seeds`, `docs`) with a placeholder `.keep` in each empty dir
 - [X] T002 [P] Initialize the shared Ruby gem in `services/shared/` (`shared.gemspec`, `Gemfile` with `aws-sdk-dynamodb`, `aws-sdk-kinesis`, `redis`, `rspec`, `standard`; `lib/shared.rb` entrypoint)
 - [X] T003 [P] Initialize `services/click_processor/` Bundler project (`Gemfile` referencing the `shared` gem via path, `rspec`, `standard`) and `services/query_service/` likewise (add `pg` for Redshift access in query_service)
-- [X] T004 [P] Initialize the Flink Maven project in `stream/flink-aggregator/pom.xml` (Java 11, Flink 1.20 `flink-table-api-java`, `flink-connector-kinesis`, `flink-connector-jdbc` + Redshift JDBC driver, `flink-test-utils`)
+- [X] T004 [P] Initialize the PyFlink project in `stream/flink-aggregator/` (`requirements.txt` with `apache-flink==1.20.*`, `tests/`; connector + Redshift JDBC jars bundled at build time)
 - [X] T005 [P] Initialize the PySpark Glue project in `batch/reconciliation/` (`job.py` stub, `requirements-dev.txt` with `pyspark==3.3.*` and `pytest`, `tests/` dir)
 - [X] T006 [P] Configure linting/formatting: `.standard.yml` for Ruby, `.editorconfig`, and a root `Makefile` with targets `test`, `build-lambdas`, `build-flink`, `build-glue`, `fmt`
 - [X] T007 [P] Add `docker-compose.test.yml` at repo root (LocalStack with dynamodb/kinesis/s3 + a Redis container) for local integration tests
@@ -111,11 +111,11 @@ the owning advertiser at minute/hour/day granularity in <1s.
 returns correct per-bucket counts; empty buckets return 0; a non-owned campaign → 403; a
 click is reflected within ~1 minute.
 
-### Stream aggregation (Flink — Java; depends on Kinesis from US1)
+### Stream aggregation (Flink — PyFlink; depends on Kinesis from US1)
 
-- [X] T029 [P] [US2] Implement the Flink Table API job in `stream/flink-aggregator/src/main/java/.../ClickAggregatorJob.java`: Kinesis source on `click-events`, event-time + bounded watermark, 1-minute tumbling window keyed by `campaign_id`, COUNT → rows `(campaign_id, minute_bucket, count)` per research D4/FR-003/FR-016
-- [X] T030 [US2] Implement the Redshift upsert JDBC sink (insert-or-add on `(campaign_id, minute_bucket)`, `source='stream'`) in `stream/flink-aggregator/src/main/java/.../RedshiftUpsertSink.java` per `contracts/redshift-schema.sql`
-- [X] T031 [P] [US2] Flink MiniCluster smoke test in `stream/flink-aggregator/src/test/java/.../WindowingTest.java`: out-of-order events land in the correct minute bucket; counts per window correct
+- [X] T029 [P] [US2] Implement the PyFlink Table API job in `stream/flink-aggregator/main.py`: Kinesis source on `click-events`, event-time + bounded watermark, 1-minute tumbling window keyed by `campaign_id`, COUNT → rows `(campaign_id, minute_bucket, count)` per research D4/FR-003/FR-016
+- [X] T030 [US2] Implement the Redshift `JdbcSink` (single-statement MERGE, replace on `(campaign_id, minute_bucket)`, `source='stream'`) in `stream/flink-aggregator/main.py` per `contracts/redshift-schema.sql`
+- [X] T031 [P] [US2] PyFlink MiniCluster smoke test in `stream/flink-aggregator/tests/test_windowing.py`: out-of-order events land in the correct minute bucket; counts per window correct
 
 ### Query service (Ruby Lambda)
 
@@ -254,6 +254,6 @@ while running. Keep dev capacity minimal.
 
 - `[P]` = different files, no incomplete-task dependency.
 - `[USx]` maps each task to its spec user story for traceability.
-- Flink (Java, T029–T031, T036) and Spark (PySpark, T042–T045) are the Constitution
+- Flink (PyFlink, T029–T031, T036) and Spark (PySpark, T042–T045) are the Constitution
   Principle III documented exceptions; all service-tier code is Ruby.
 - Commit after each task or logical group.

@@ -77,7 +77,7 @@ resource "aws_kinesisanalyticsv2_application" "aggregator" {
       code_content {
         s3_content_location {
           bucket_arn = "arn:aws:s3:::${var.artifacts_bucket}"
-          file_key   = var.flink_jar_key
+          file_key   = var.flink_zip_key
         }
       }
       code_content_type = "ZIPFILE"
@@ -89,6 +89,14 @@ resource "aws_kinesisanalyticsv2_application" "aggregator" {
     }
 
     environment_properties {
+      # Tells Managed Flink this is a Python app: entry script + connector jar.
+      property_group {
+        property_group_id = "kinesis.analytics.flink.run.options"
+        property_map = {
+          "python"  = "main.py"
+          "jarfile" = "lib/flink-sql-connector-kinesis-4.3.0-1.20.jar"
+        }
+      }
       property_group {
         property_group_id = "FlinkAppProperties"
         # NOTE (educational): Redshift password is passed via app properties for

@@ -7,7 +7,7 @@ below. This is an educational stack — destroy it when idle to avoid cost.
 ## Prerequisites
 
 - Terraform ≥ 1.7, AWS CLI v2 (configured: `aws configure` / SSO)
-- Ruby 3.3 + Bundler, Java 11 + Maven (Flink app), Python 3.10 (Glue job packaging)
+- Ruby 3.3 + Bundler, Python 3.11 (PyFlink app) + Python 3.10 (Glue job), a JRE (PyFlink runtime)
 - Docker (LocalStack + Redis for local tests)
 - `jq`, `curl`
 
@@ -27,7 +27,7 @@ docker compose -f docker-compose.test.yml down
 cd batch/reconciliation && python -m pytest
 
 # Flink Table API smoke tests (MiniCluster)
-cd stream/flink-aggregator && mvn test
+cd stream/flink-aggregator && pip install -r requirements.txt && python -m pytest -q
 ```
 
 ## 2. Provision AWS (Terraform)
@@ -46,7 +46,7 @@ Build/upload artifacts (wired as Terraform-invoked build steps or a Make target)
 
 ```bash
 make build-lambdas      # zip Ruby Lambdas + shared layer
-make build-flink        # mvn package → upload JAR to artifacts bucket
+make build-flink        # zip main.py + connector jars → upload to artifacts bucket
 make build-glue         # upload job.py to scripts bucket
 terraform apply         # picks up new artifact versions
 ```

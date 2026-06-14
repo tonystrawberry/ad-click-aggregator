@@ -23,17 +23,18 @@ CREATE TABLE IF NOT EXISTS click_aggregates_stage (
 );
 
 -- ---------------------------------------------------------------------------
--- Flink upsert (per (campaign, minute) window firing). Executed via JDBC sink.
--- Adds stream counts incrementally; reconciliation later overwrites authoritatively.
+-- PyFlink stream sink: one MERGE per (campaign, minute) window firing, via JdbcSink.
+-- REPLACE semantics (set, not add) — a closed window emits its final count once, so
+-- this is idempotent under checkpoint replay. Reconciliation later overwrites the
+-- period authoritatively with source='batch'.
 -- ---------------------------------------------------------------------------
--- MERGE-style pattern (Redshift): stage one row then upsert.
---   UPDATE click_aggregates t SET click_count = t.click_count + :n,
---          source='stream', updated_at=GETDATE()
---    WHERE t.campaign_id=:c AND t.minute_bucket=:m;
---   INSERT INTO click_aggregates (campaign_id, minute_bucket, click_count, source, updated_at)
---   SELECT :c, :m, :n, 'stream', GETDATE()
---    WHERE NOT EXISTS (SELECT 1 FROM click_aggregates
---                       WHERE campaign_id=:c AND minute_bucket=:m);
+--   MERGE INTO click_aggregates t
+--   USING (SELECT :c AS campaign_id, :m AS minute_bucket, :n AS click_count) s
+--      ON t.campaign_id = s.campaign_id AND t.minute_bucket = s.minute_bucket
+--   WHEN MATCHED THEN UPDATE
+--     SET click_count = s.click_count, source = 'stream', updated_at = GETDATE()
+--   WHEN NOT MATCHED THEN INSERT (campaign_id, minute_bucket, click_count, source, updated_at)
+--     VALUES (s.campaign_id, s.minute_bucket, s.click_count, 'stream', GETDATE());
 
 -- ---------------------------------------------------------------------------
 -- Reconciliation swap (Spark): authoritative overwrite for a closed period

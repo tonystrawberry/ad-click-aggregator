@@ -2,8 +2,9 @@
 
 The two Kinesis consumers (REFERENCE: Flink aggregation + dump raw to S3).
 
-- Managed Service for Apache Flink application running the aggregator jar; reads
-  `click-events`, writes minute aggregates to Redshift (`source='stream'`).
+- Managed Service for Apache Flink **Python** application running the PyFlink app
+  (`main.py` + connector jars); reads `click-events`, writes minute aggregates to
+  Redshift (`source='stream'`).
 - Kinesis Data Firehose → S3 `raw/dt=/hr=` in Parquet (the reconciliation source).
 - Glue Data Catalog database + `click_events` table describing the raw schema,
   used by Firehose format conversion and the Spark job.

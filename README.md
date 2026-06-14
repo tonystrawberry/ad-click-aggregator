@@ -16,7 +16,7 @@ campaign click metrics over time at minute granularity in under a second.
 | Idempotency / cache | ElastiCache **Redis** |
 | Ads catalog | **DynamoDB** |
 | Event stream | **Kinesis Data Streams** (salted key for hot shards) |
-| Stream aggregation | Managed Service for **Apache Flink** (Java) |
+| Stream aggregation | Managed Service for **Apache Flink** (PyFlink) |
 | Raw archive | Kinesis **Firehose → S3** (Parquet) |
 | OLAP aggregates | **Redshift Serverless** |
 | Reconciliation | **Spark** on **AWS Glue** (PySpark), hourly |
@@ -30,7 +30,7 @@ mapping back to `REFERENCE.md`.
 ```
 infra/terraform/   IaC — modules: storage, ingestion, streaming, query, reconciliation
 services/          Ruby Lambdas (click_processor, query_service) + shared gem
-stream/            Java Flink aggregator
+stream/            PyFlink aggregator
 batch/             PySpark Glue reconciliation job
 seeds/             sample catalog + click simulator
 specs/             Spec Kit spec, plan, research, data-model, contracts, tasks

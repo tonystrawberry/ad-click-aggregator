@@ -17,12 +17,9 @@ coverage/
 crash.log
 crash.*.log
 
-# --- Java / Flink ---
-target/
-*.class
+# --- Flink (PyFlink app) ---
+stream/flink-aggregator/lib/   # connector + redshift jars fetched by build_flink.sh
 *.jar
-.gradle/
-build/
 
 # --- Python / Spark ---
 __pycache__/

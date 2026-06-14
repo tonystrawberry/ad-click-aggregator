@@ -1,7 +1,13 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: (template) → 1.0.0
+Version change: 1.0.0 → 1.0.1
+Bump rationale (1.0.1, PATCH): Principle III example clarified — Flink jobs may be
+written in PyFlink (the stream aggregator migrated from Java to PyFlink so the
+codebase is Ruby + Python, dropping the Java/Maven toolchain). No principle added,
+removed, or redefined.
+
+--- Prior: (template) → 1.0.0 ---
 Bump rationale: Initial ratification of the project constitution from the template.
 
 Modified principles: N/A (initial adoption)
@@ -70,8 +76,8 @@ full stack are core learning outcomes and prevent surprise AWS costs.
 Application and service code MUST be written in Ruby wherever the runtime supports it —
 this explicitly includes Lambda functions (click processor, query service, glue logic).
 A non-Ruby language MAY be used ONLY where a component has no practical Ruby option
-(e.g., Flink jobs in Java/Scala/SQL, Spark jobs in PySpark/Scala); each such exception
-MUST be noted in the plan. Rationale: Ruby is the maintainer's preferred language and
+(e.g., Flink jobs in PyFlink/Java/Scala/SQL, Spark jobs in PySpark/Scala); each such
+exception MUST be noted in the plan. Rationale: Ruby is the maintainer's preferred language and
 keeping services in one language maximizes the learning value of the service tier.
 
 ### IV. Data Integrity & Idempotency
@@ -154,4 +160,4 @@ Constitution Check gate. Because this is a solo educational project, the maintai
 the sole approver; the requirement is that deviations are documented and intentional,
 not that they are forbidden.
 
-**Version**: 1.0.0 | **Ratified**: 2026-06-13 | **Last Amended**: 2026-06-13
+**Version**: 1.0.1 | **Ratified**: 2026-06-13 | **Last Amended**: 2026-06-14

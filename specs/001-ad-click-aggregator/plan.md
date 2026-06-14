@@ -22,16 +22,17 @@ billing-grade integrity. Everything is provisioned with **Terraform**.
 
 **Language/Version**:
 - Ruby 3.3 (AWS Lambda `ruby3.3` runtime) — click processor, query service, shared lib.
-- Java 11 + Apache Flink 1.20 (Table API) — stream aggregator on Managed Service for
-  Apache Flink. *(Non-Ruby; documented exception under Constitution Principle III.)*
+- Python 3.11 + PyFlink (Apache Flink 1.20 Table API) — stream aggregator on Managed
+  Service for Apache Flink. *(Non-Ruby; documented exception under Constitution
+  Principle III. Migrated from Java to PyFlink to drop the Java/Maven toolchain.)*
 - Python 3.10 + PySpark (AWS Glue 4.0 / Spark 3.3) — reconciliation batch job.
   *(Non-Ruby; documented exception under Constitution Principle III.)*
 
 **Primary Dependencies**:
 - Ruby: `aws-sdk-dynamodb`, `aws-sdk-kinesis`, `redis`, `rack` (HTTP API event shaping),
   `rspec`, `standard` (lint/format).
-- Flink: `flink-table-api-java`, `flink-connector-kinesis`, `flink-connector-jdbc` +
-  Redshift JDBC driver.
+- PyFlink: `apache-flink` (Table API) + bundled `flink-sql-connector-kinesis` and
+  Redshift JDBC driver jars for the `JdbcSink`.
 - Spark/Glue: bundled PySpark, `boto3` for catalog access.
 - IaC: Terraform ≥ 1.7, `hashicorp/aws` provider ≥ 5.x.
 
@@ -45,7 +46,8 @@ billing-grade integrity. Everything is provisioned with **Terraform**.
 **Testing**:
 - RSpec unit + integration for Ruby Lambdas; **LocalStack** for local DynamoDB/Kinesis/S3
   integration tests.
-- Flink Table API tests via the Flink MiniCluster test harness (smoke-level for education).
+- PyFlink Table API windowing test via the Flink MiniCluster harness bundled with
+  `apache-flink` (smoke-level for education).
 - PySpark reconciliation tested locally against sample Parquet/JSON raw clicks.
 - `terraform validate` + `terraform plan` in CI; targeted `terraform apply` against a dev
   account when the user supplies credentials.
@@ -80,7 +82,7 @@ cardinality, Redshift-friendly). 3 user stories, ~5 Terraform modules, 2 Ruby La
 |---|-----------|--------|-------|
 | I | Reference-Architecture Fidelity | ✅ PASS | All named components present: API Gateway, Kinesis Data Streams, Flink (Managed Service for Apache Flink), Spark (Glue) reconciliation, Redshift OLAP, DynamoDB ads, Redis dedup, S3 raw archive. Pipeline matches the reference end to end. |
 | II | Infrastructure as Code (Terraform) | ✅ PASS | 100% of AWS resources in `infra/terraform/` modules; no console-only resources planned. |
-| III | Ruby-First Implementation | ✅ PASS (with documented exceptions) | Both Lambdas + shared lib in Ruby 3.3. Flink (Java) and Spark (PySpark) are the explicitly-permitted "no practical Ruby option" exceptions named in Principle III. Recorded in Complexity Tracking. |
+| III | Ruby-First Implementation | ✅ PASS (with documented exceptions) | Both Lambdas + shared lib in Ruby 3.3. Flink (PyFlink) and Spark (PySpark) are the explicitly-permitted "no practical Ruby option" exceptions named in Principle III. Recorded in Complexity Tracking. |
 | IV | Data Integrity & Idempotency | ✅ PASS | Impression-ID dedup in Redis before counting; raw clicks durably archived to S3; Spark reconciliation recomputes authoritative counts; no swallowed errors (failed Kinesis put → 5xx, client/edge retries; nothing silently dropped). |
 | V | Managed AWS Services First | ✅ PASS | Managed Service for Apache Flink (not self-run Flink), Kinesis (not self-hosted Kafka), Redshift Serverless, ElastiCache, Glue, Lambda — all managed. |
 | VI | Educational Clarity | ✅ PASS | Per-component READMEs mapping each module to the reference; explicit over clever; no abstractions beyond the reference design (YAGNI). |
@@ -133,9 +135,9 @@ services/                     # Ruby (Lambda)
     └── spec/
 
 stream/
-└── flink-aggregator/         # Java Flink Table API app (1-min tumbling windows → Redshift)
-    ├── src/main/java/
-    └── src/test/java/
+└── flink-aggregator/         # PyFlink Table API app (1-min tumbling windows → Redshift)
+    ├── main.py
+    └── tests/
 
 batch/
 └── reconciliation/           # PySpark Glue job: S3 raw → recompute → overwrite Redshift
@@ -159,8 +161,8 @@ independently demonstrable per the spec's Independent Test notes.
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|--------------------------------------|
-| Flink job in **Java**, not Ruby (Principle III) | Managed Service for Apache Flink runs JVM/Flink apps; there is no Ruby Flink runtime. Stream windowing is core to the reference design. | A Ruby Kinesis consumer doing windowing would re-implement Flink and violate Principle I (Reference-Architecture Fidelity) and V (managed-first). |
+| Flink job in **PyFlink (Python)**, not Ruby (Principle III) | Managed Service for Apache Flink runs Flink apps; there is no Ruby Flink runtime. PyFlink keeps the codebase Ruby + Python and drops the Java/Maven toolchain. Stream windowing is core to the reference design. | A Ruby Kinesis consumer doing windowing would re-implement Flink and violate Principle I (Reference-Architecture Fidelity) and V (managed-first). |
 | Reconciliation job in **PySpark**, not Ruby (Principle III) | Spark/Glue is the reference's batch engine; Glue's first-class languages are Python/Scala, not Ruby. | A Ruby batch job over S3 would not be Spark and would violate Principle I. |
 
 Both exceptions are explicitly pre-authorized by Principle III ("Flink jobs in
-Java/Scala/SQL, Spark jobs in PySpark/Scala"). All service-tier code remains Ruby.
+PyFlink/Java/Scala/SQL, Spark jobs in PySpark/Scala"). All service-tier code remains Ruby.

@@ -53,15 +53,19 @@ jobs:
         working-directory: batch/reconciliation
 
   flink:
-    name: Flink build + tests
+    name: PyFlink build + tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11" # apache-flink supports 3.8–3.11
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "11"
-      - run: mvn -q test
+          java-version: "11" # PyFlink bundles Flink but needs a JVM at runtime
+      - run: pip install -r stream/flink-aggregator/requirements.txt
+      - run: python -m pytest -q
         working-directory: stream/flink-aggregator
 
   terraform:

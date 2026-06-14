@@ -72,7 +72,7 @@ MB/s per shard, with salting to spread hot keys).
 
 ---
 
-## D4. Stream aggregation: Managed Service for Apache Flink (Table API, Java)
+## D4. Stream aggregation: Managed Service for Apache Flink (Table API, PyFlink)
 
 **Decision**: A Flink application on Amazon Managed Service for Apache Flink consumes
 `click-events`, applies a **1-minute tumbling window keyed by `campaign_id`** using
@@ -83,13 +83,18 @@ MB/s per shard, with salting to spread hot keys).
 watermark attributes delayed/out-of-order clicks to the correct minute (FR-016). Tumbling
 1-minute windows match the minimum granularity (FR-003/SC-007).
 
-**Language**: Java 11 + Flink 1.20 Table API — documented Principle III exception (no Ruby
-Flink runtime). Table API keeps the windowing logic close to declarative SQL for clarity
-(Principle VI).
+**Language**: PyFlink (Python 3.11) + Flink 1.20 Table API — documented Principle III
+exception (no Ruby Flink runtime). The windowing is pure Table API/SQL, which is planned
+and executed in the JVM, so there is **no Python-process penalty** (we have no Python
+UDFs); performance matches a Java job. PyFlink keeps the codebase Ruby + Python and removes
+the Java/Maven toolchain. *(Migrated from an initial Java implementation.)*
 
-**Redshift write path**: Flink JDBC sink in upsert mode (batched). Rationale: keeps a single
-authoritative aggregate store and lets the query service read one place. Aggregate
-cardinality is campaigns × minutes (low), so Redshift handles the write rate comfortably.
+**Redshift write path**: a PyFlink `JdbcSink` runs a single-statement Redshift **MERGE**
+that REPLACES the `(campaign, minute)` count with `source='stream'`. Redshift has no
+`ON CONFLICT`, but it does support `MERGE`; one closed window emits its count once, so
+replace semantics are idempotent under checkpoint replay (cleaner than the accumulate-add
+used by the earlier Java sink). Single authoritative store; query service reads one place.
+Aggregate cardinality is campaigns × minutes (low), so Redshift handles the write rate.
 
 **Alternatives considered**:
 - *Flink → Redshift streaming ingestion (materialized view from Kinesis)*: would bypass

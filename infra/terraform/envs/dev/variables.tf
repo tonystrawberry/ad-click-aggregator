@@ -34,10 +34,10 @@ variable "reconciliation_schedule" {
   default     = "rate(1 hour)"
 }
 
-variable "flink_jar_key" {
-  description = "S3 key of the Flink fat jar within the artifacts bucket."
+variable "flink_zip_key" {
+  description = "S3 key of the PyFlink app zip (main.py + jars) within the artifacts bucket."
   type        = string
-  default     = "flink/flink-aggregator-1.0.0.jar"
+  default     = "flink/flink-app.zip"
 }
 
 variable "glue_script_key" {

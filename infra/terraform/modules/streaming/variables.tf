@@ -22,7 +22,7 @@ variable "artifacts_bucket" {
   type = string
 }
 
-variable "flink_jar_key" {
+variable "flink_zip_key" {
   type = string
 }
 

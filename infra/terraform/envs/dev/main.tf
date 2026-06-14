@@ -35,7 +35,7 @@ module "streaming" {
   raw_bucket_name     = module.storage.raw_bucket_name
   raw_bucket_arn      = module.storage.raw_bucket_arn
   artifacts_bucket    = module.storage.artifacts_bucket_name
-  flink_jar_key       = var.flink_jar_key
+  flink_zip_key       = var.flink_zip_key
   redshift_workgroup  = module.storage.redshift_workgroup_name
   redshift_endpoint   = module.storage.redshift_endpoint
   redshift_secret_arn = module.storage.redshift_secret_arn

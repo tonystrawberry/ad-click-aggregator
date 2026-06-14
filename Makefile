@@ -19,8 +19,8 @@ test-ruby: ## Run RSpec for the shared gem and both Lambdas
 test-spark: ## Run PySpark reconciliation transform tests
 	cd batch/reconciliation && python -m pytest -q
 
-test-flink: ## Run Flink MiniCluster tests (requires Maven)
-	cd stream/flink-aggregator && mvn -q test
+test-flink: ## Run PyFlink MiniCluster windowing test
+	cd stream/flink-aggregator && python -m pytest -q
 
 fmt: ## Format Ruby (standard) and Terraform
 	cd services/shared          && bundle exec standardrb --fix || true
@@ -39,10 +39,8 @@ build-lambdas: ## Zip the Ruby Lambdas (shared gem vendored in)
 	scripts/build_lambda.sh click_processor
 	scripts/build_lambda.sh query_service
 
-build-flink: ## Package the Flink fat jar and upload to the artifacts bucket
-	cd stream/flink-aggregator && mvn -q clean package
-	aws s3 cp stream/flink-aggregator/target/flink-aggregator-1.0.0.jar \
-		s3://$(ARTIFACTS_BUCKET)/flink/flink-aggregator-1.0.0.jar
+build-flink: ## Package the PyFlink app (main.py + jars) and upload to the artifacts bucket
+	ARTIFACTS_BUCKET=$(ARTIFACTS_BUCKET) scripts/build_flink.sh
 
 build-glue: ## Upload the Glue PySpark script to the artifacts bucket
 	aws s3 cp batch/reconciliation/job.py s3://$(ARTIFACTS_BUCKET)/glue/job.py
