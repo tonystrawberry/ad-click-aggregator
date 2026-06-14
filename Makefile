@@ -3,7 +3,7 @@
 
 .PHONY: help test test-ruby test-spark test-flink fmt build build-lambdas build-flink build-glue tf-validate
 
-ARTIFACTS_BUCKET ?= ad-click-artifacts-dev
+ARTIFACTS_BUCKET ?= ad-click-dev-artifacts
 LAMBDA_DIST := dist
 
 help:
